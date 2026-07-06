@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Resume ↔ JD Matcher</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #121820;
+    --border: #232c38;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --accent: #4f8cff;
+    --green: #3ecf8e;
+    --red: #ff6b6b;
+    --amber: #f5b940;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 16px;
+  }
+  .container { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .panel label { font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 8px; }
+  textarea {
+    width: 100%;
+    min-height: 220px;
+    background: #0d1218;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  input[type="file"] { margin-top: 10px; font-size: 0.85rem; color: var(--muted); }
+  .actions { margin: 20px 0; display: flex; align-items: center; gap: 12px; }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .status { color: var(--muted); font-size: 0.9rem; }
+  .error { color: var(--red); }
+  #results { display: none; margin-top: 24px; }
+  .score-wrap { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+  .score-circle {
+    width: 100px; height: 100px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; font-weight: 700;
+    border: 6px solid var(--accent);
+    flex-shrink: 0;
+  }
+  .score-label { color: var(--muted); font-size: 0.9rem; }
+  .section-title { font-weight: 600; margin: 18px 0 8px; font-size: 0.95rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    border: 1px solid transparent;
+  }
+  .chip.matched { background: rgba(62,207,142,0.12); color: var(--green); border-color: rgba(62,207,142,0.35); }
+  .chip.missing-must { background: rgba(255,107,107,0.12); color: var(--red); border-color: rgba(255,107,107,0.35); }
+  .chip.missing-nice { background: rgba(245,185,64,0.12); color: var(--amber); border-color: rgba(245,185,64,0.35); }
+  .narrative {
+    background: #0d1218;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    line-height: 1.55;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+  .config-note { font-size: 0.8rem; color: var(--muted); margin-bottom: 20px; }
+  .config-note code { background: #0d1218; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Resume ↔ JD Matcher</h1>
+  <div class="subtitle">Paste text or upload a file for each side, then run the match.</div>
+  <div class="config-note">Backend expected at <code id="api-base-display">http://localhost:8000</code></div>
+
+  <div class="grid">
+    <div class="panel">
+      <label for="resume-text">Resume</label>
+      <textarea id="resume-text" placeholder="Paste resume text here..."></textarea>
+      <input type="file" id="resume-file" accept=".pdf,.txt" />
+    </div>
+    <div class="panel">
+      <label for="jd-text">Job Description</label>
+      <textarea id="jd-text" placeholder="Paste job description text here..."></textarea>
+      <input type="file" id="jd-file" accept=".pdf,.txt" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="match-btn">Run Match</button>
+    <span class="status" id="status-text"></span>
+  </div>
+
+  <div id="results">
+    <div class="score-wrap">
+      <div class="score-circle" id="score-circle">--</div>
+      <div>
+        <div style="font-size:1.1rem; font-weight:600;">Overall Match Score</div>
+        <div class="score-label">Weighted: 70% must-have skills, 30% nice-to-have skills</div>
+      </div>
+    </div>
+
+    <div class="section-title">Must-Have Skills — Matched</div>
+    <div class="chips" id="must-matched"></div>
+
+    <div class="section-title">Must-Have Skills — Missing</div>
+    <div class="chips" id="must-missing"></div>
+
+    <div class="section-title">Nice-to-Have Skills — Matched</div>
+    <div class="chips" id="nice-matched"></div>
+
+    <div class="section-title">Nice-to-Have Skills — Missing</div>
+    <div class="chips" id="nice-missing"></div>
+
+    <div class="section-title">Narrative Explanation</div>
+    <div class="narrative" id="narrative-text"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+document.getElementById("api-base-display").textContent = API_BASE;
+
+const matchBtn = document.getElementById("match-btn");
+const statusText = document.getElementById("status-text");
+const resultsEl = document.getElementById("results");
+
+function renderChips(containerId, skills, chipClass) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  if (!skills || skills.length === 0) {
+    el.innerHTML = '<span style="color:#8b98a5; font-size:0.85rem;">None</span>';
+    return;
+  }
+  skills.forEach(skill => {
+    const span = document.createElement("span");
+    span.className = "chip " + chipClass;
+    span.textContent = skill;
+    el.appendChild(span);
+  });
+}
+
+function scoreColor(score) {
+  if (score >= 75) return "#3ecf8e";
+  if (score >= 50) return "#f5b940";
+  return "#ff6b6b";
+}
+
+matchBtn.addEventListener("click", async () => {
+  const resumeText = document.getElementById("resume-text").value;
+  const jdText = document.getElementById("jd-text").value;
+  const resumeFile = document.getElementById("resume-file").files[0];
+  const jdFile = document.getElementById("jd-file").files[0];
+
+  if (!resumeText.trim() && !resumeFile) {
+    statusText.textContent = "Please provide a resume (text or file).";
+    statusText.className = "status error";
+    return;
+  }
+  if (!jdText.trim() && !jdFile) {
+    statusText.textContent = "Please provide a job description (text or file).";
+    statusText.className = "status error";
+    return;
+  }
+
+  matchBtn.disabled = true;
+  statusText.className = "status";
+  statusText.textContent = "Analyzing... (calling LLM, may take a few seconds)";
+  resultsEl.style.display = "none";
+
+  try {
+    const formData = new FormData();
+    if (resumeFile) formData.append("resume_file", resumeFile);
+    if (resumeText.trim()) formData.append("resume_text", resumeText);
+    if (jdFile) formData.append("jd_file", jdFile);
+    if (jdText.trim()) formData.append("jd_text", jdText);
+
+    const res = await fetch(`${API_BASE}/api/match`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.detail || `Request failed with status ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    const circle = document.getElementById("score-circle");
+    circle.textContent = data.match_score;
+    circle.style.borderColor = scoreColor(data.match_score);
+    circle.style.color = scoreColor(data.match_score);
+
+    renderChips("must-matched", data.must_have.matched, "matched");
+    renderChips("must-missing", data.must_have.missing, "missing-must");
+    renderChips("nice-matched", data.nice_to_have.matched, "matched");
+    renderChips("nice-missing", data.nice_to_have.missing, "missing-nice");
+
+    document.getElementById("narrative-text").textContent = data.narrative;
+
+    resultsEl.style.display = "block";
+    statusText.textContent = "Done.";
+  } catch (err) {
+    statusText.className = "status error";
+    statusText.textContent = "Error: " + err.message;
+  } finally {
+    matchBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
