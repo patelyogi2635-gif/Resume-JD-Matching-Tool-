@@ -1,85 +1,129 @@
-# Resume ↔ Job Description Matcher
+# 🚀 Resume ↔ Job Description Matcher
 
-An AI-powered Resume–JD matching application that analyzes resumes against job descriptions using Large Language Models (LLMs), semantic embeddings, and deterministic scoring.
+An AI-powered Resume–Job Description matching application that evaluates how well a candidate's resume aligns with a target job description using **LLMs, semantic embeddings, and deterministic scoring**.
 
-The system extracts skills, computes an explainable match score, measures semantic similarity, and generates recruiter-style feedback. It is designed with a modular backend, reproducible scoring, and a lightweight frontend for easy deployment.
+The application extracts required skills, computes an explainable match score, measures semantic similarity, and generates recruiter-style feedback to help candidates identify strengths and skill gaps.
 
----
+## 🌐 Live Demo
 
-## Features
+**Application:** https://resume-jd-matching-tool-production.up.railway.app/
 
-- Extracts required and preferred skills from job descriptions using LLMs.
-- Detects demonstrated skills from resumes.
-- Computes a deterministic match score in Python.
-- Calculates semantic similarity using embedding vectors and cosine similarity.
-- Generates recruiter-style feedback aligned with the computed score.
-- Supports both pasted text and PDF/TXT uploads.
-- Single-service deployment (FastAPI + static frontend).
+**API Documentation:** https://resume-jd-matching-tool-production.up.railway.app/docs
+
+**Health Check:** https://resume-jd-matching-tool-production.up.railway.app/api/health
 
 ---
 
-## Scoring Methodology
+# ✨ Features
 
-The final match score combines three independent signals:
+* 📄 Upload Resume (PDF/TXT) or paste resume text
+* 📋 Upload Job Description (PDF/TXT) or paste JD text
+* 🤖 AI-powered skill extraction using LLMs
+* 📊 Deterministic ATS-style match score
+* 🧠 Semantic similarity using embedding vectors
+* ✅ Must-have and Nice-to-have skill analysis
+* 📌 Recruiter-style narrative explanation
+* 🔄 Automatic fallback between AI providers
+* 🚀 Single-service deployment with FastAPI and Railway
 
-| Component | Weight |
-|-----------|--------:|
-| Must-have skill match | **55%** |
-| Nice-to-have skill match | **25%** |
-| Semantic similarity | **20%** |
+---
 
-### Skill Matching
+# 🏗️ System Architecture
 
-Skills are extracted using an LLM and matched using fuzzy matching to account for naming variations.
+```
+                Resume              Job Description
+                   │                      │
+                   └──────────┬───────────┘
+                              │
+                      File/Text Parser
+                              │
+                              ▼
+                   LLM Skill Extraction
+                              │
+          ┌───────────────────┴───────────────────┐
+          │                                       │
+          ▼                                       ▼
+   Skill Matching Engine                 Semantic Embeddings
+          │                                       │
+          └──────────────┬────────────────────────┘
+                         ▼
+              Deterministic Scoring Engine
+                         │
+                         ▼
+            Recruiter Narrative Generator
+                         │
+                         ▼
+                  JSON Response + UI
+```
+
+---
+
+# 📊 Scoring Methodology
+
+The final score is computed deterministically in Python instead of relying on the language model.
+
+| Component           |  Weight |
+| ------------------- | ------: |
+| Must-have Skills    | **55%** |
+| Nice-to-have Skills | **25%** |
+| Semantic Similarity | **20%** |
+
+## Skill Matching
+
+Uses fuzzy matching to recognize similar technologies.
 
 Examples:
 
-- PostgreSQL ↔ Postgres
-- Fast API ↔ FastAPI
-- JS ↔ JavaScript
+* PostgreSQL ↔ Postgres
+* Fast API ↔ FastAPI
+* JS ↔ JavaScript
 
-### Semantic Similarity
+## Semantic Matching
 
-The complete resume and job description are converted into embedding vectors.
+* Gemini Embeddings
+* Cosine Similarity
 
-The system computes cosine similarity between both embeddings to measure contextual alignment beyond keyword overlap.
-
-If embeddings are unavailable, the application automatically falls back to skill-only scoring to ensure uninterrupted execution.
-
----
-
-## Architecture
-
-```
-Resume
-      │
-      ▼
-File Parser
-      │
-      ▼
-LLM Skill Extraction
-      │
-      ▼
-Deterministic Scoring Engine
-      │
-      ├────────► Semantic Embeddings
-      │               │
-      │               ▼
-      │        Cosine Similarity
-      │
-      ▼
-Recruiter Narrative Generator
-      │
-      ▼
-Final JSON Response
-```
+If embedding generation fails, the application automatically falls back to a skill-only scoring strategy, ensuring uninterrupted execution.
 
 ---
 
-## Project Structure
+# 🛠️ Tech Stack
+
+## Backend
+
+* Python
+* FastAPI
+* Pydantic
+* Uvicorn
+
+## AI
+
+* Groq
+* Google Gemini
+* LiteLLM
+* Gemini Embeddings
+
+## Frontend
+
+* HTML
+* CSS
+* Vanilla JavaScript
+
+## File Processing
+
+* PDF Parsing
+* Text Extraction
+
+## Deployment
+
+* Railway
+
+---
+
+# 📂 Project Structure
 
 ```
-resume-jd-matcher/
+Resume-JD-Matching-Tool
 │
 ├── backend/
 │   ├── app/
@@ -91,75 +135,44 @@ resume-jd-matcher/
 │   │   ├── schemas.py
 │   │   └── scoring.py
 │   │
+│   ├── frontend/
 │   ├── main.py
-│   ├── debug_connectivity.py
 │   ├── requirements.txt
 │   └── .env.example
 │
-├── frontend/
-│   └── index.html
-│
-└── README.md
+├── README.md
+└── .gitignore
 ```
 
 ---
 
-## Tech Stack
+# 📡 API
 
-### Backend
+## POST `/api/match`
 
-- Python
-- FastAPI
-- Pydantic
-
-### AI
-
-- Groq LLM
-- Google Gemini
-- Embeddings
-- Cosine Similarity
-
-### Frontend
-
-- HTML
-- CSS
-- Vanilla JavaScript
-
-### File Processing
-
-- PyMuPDF
-- TXT Parsing
-
----
-
-## API
-
-### POST `/api/match`
-
-Accepts either pasted text or uploaded files.
+Accepts either uploaded files or pasted text.
 
 ### Request
 
-| Field | Type |
-|------|------|
-| resume_text | string |
+| Field       | Type      |
+| ----------- | --------- |
+| resume_text | string    |
 | resume_file | PDF / TXT |
-| jd_text | string |
-| jd_file | PDF / TXT |
-
----
+| jd_text     | string    |
+| jd_file     | PDF / TXT |
 
 ### Example Response
 
 ```json
 {
-  "match_score": 84,
-  "semantic_similarity": 81.6,
+  "match_score": 89,
+  "semantic_similarity": 82.6,
   "must_have": {
     "matched": [
       "Python",
       "FastAPI",
-      "REST APIs"
+      "LLMs",
+      "Docker"
     ],
     "missing": [
       "Redis"
@@ -167,71 +180,57 @@ Accepts either pasted text or uploaded files.
   },
   "nice_to_have": {
     "matched": [
-      "Docker",
-      "LangChain"
+      "LangChain",
+      "LangGraph"
     ],
     "missing": [
-      "Kubernetes"
+      "AWS",
+      "CI/CD"
     ]
   },
   "resume_skills_detected": [
     "Python",
     "FastAPI",
-    "Docker"
+    "Docker",
+    "LangChain"
   ],
-  "narrative": "The candidate demonstrates strong alignment with the role..."
+  "narrative": "The candidate demonstrates a strong alignment with the role..."
 }
 ```
 
 ---
 
-## Local Setup
+# ⚙️ Local Setup
 
-### Clone the repository
+## Clone the repository
 
 ```bash
-git clone <repository-url>
-cd resume-jd-matcher/backend
+git clone https://github.com/patelyogi2635-gif/Resume-JD-Matching-Tool-.git
+cd Resume-JD-Matching-Tool/backend
 ```
 
-### Install dependencies
+## Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Configure environment variables
+## Configure environment variables
 
-```bash
-cp .env.example .env
-```
-
-Add your API keys:
+Create a `.env` file.
 
 ```
-GROQ_API_KEY=...
-GEMINI_API_KEY=...
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### Verify API connectivity
-
-```bash
-python debug_connectivity.py
-```
-
-### Run the application
+## Start the application
 
 ```bash
 python main.py
 ```
 
-Backend
-
-```
-http://localhost:8000
-```
-
-Frontend
+The application will be available at:
 
 ```
 http://localhost:8000
@@ -239,42 +238,32 @@ http://localhost:8000
 
 ---
 
-## Deployment
+# 🎯 Design Principles
 
-The project is designed as a **single FastAPI service**, where:
-
-- FastAPI serves the REST API
-- Static frontend is served by FastAPI
-- Suitable for Railway, Render, or similar platforms
-
-No frontend build process is required.
-
----
-
-## Design Principles
-
-- Modular architecture
-- Deterministic scoring (not dependent on LLM calculations)
-- Explainable recruiter feedback
-- Graceful fallback when embeddings are unavailable
-- Production-friendly API design
-- Lightweight frontend with no framework dependencies
+* Modular architecture
+* Deterministic scoring
+* Explainable AI outputs
+* Semantic matching beyond keyword search
+* Fault-tolerant fallback strategy
+* Lightweight frontend
+* Production-ready deployment
 
 ---
 
-## Future Improvements
+# 🔮 Future Improvements
 
-- Resume section weighting (Projects > Skills > Summary)
-- Skill synonym normalization
-- DOCX resume support
-- Recruiter dashboard
-- Batch resume screening
-- Caching of LLM responses
-- Per-skill confidence scores
-- Authentication and usage analytics
+* DOCX resume support
+* Skill synonym knowledge base
+* Resume section weighting
+* Batch resume screening
+* Authentication
+* User dashboard
+* Recruiter analytics
+* Cached LLM responses
+* Per-skill confidence scores
 
 ---
 
-## License
+# 📄 License
 
-This project is provided for educational and portfolio purposes.
+This project is released for educational and portfolio purposes.
