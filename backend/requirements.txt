@@ -5,3 +5,9 @@ pdfplumber==0.11.4
 litellm==1.48.0
 python-dotenv==1.0.1
 pydantic==2.9.2
+
+# Note: gemini-1.5-flash and text-embedding-004 were both fully shut down by
+# Google in early 2026 - the app uses gemini-2.5-flash and
+# gemini-embedding-001 instead. If either starts failing again, check
+# https://ai.google.dev/gemini-api/docs/deprecations for current model names
+# and update app/config.py.
