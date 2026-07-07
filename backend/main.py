@@ -58,7 +58,7 @@ async def match_resume_to_jd(
 # Serve the frontend as static files from the same service, so one Railway
 # deployment gives you a single URL for both the API and the UI.
 # Must be mounted last so it doesn't shadow the /api/* routes above.
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
 if __name__ == "__main__":
